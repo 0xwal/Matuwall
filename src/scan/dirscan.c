@@ -14,6 +14,22 @@
 // A picker, not a file browser; refuse to build an unbounded grid
 #define MAX_ITEMS 4096
 #define INITIAL_CAPACITY 64
+// bound a recursive walk by tree size, not image count, so startup stays flat
+#define MAX_DEPTH 8
+#define MAX_ENTRIES 8192
+#define MAX_DIRS 256
+
+// breadth-first queue of subdirectories, so top-level images always come first
+struct walk {
+	char **dirs;
+	size_t head;
+	size_t count;
+	size_t capacity;
+	size_t entries;
+	size_t unreadable;
+	bool budgeted;
+	bool dirs_capped;
+};
 
 static const char *const supported_extensions[] = {
 	".jpg",
@@ -42,19 +58,20 @@ static bool may_be_image(unsigned char type) {
 	return type == DT_REG || type == DT_LNK || type == DT_UNKNOWN;
 }
 
-static bool push_path(struct matuwall_dirscan *scan, char *path) {
-	if (scan->count == scan->capacity) {
-		size_t capacity = scan->capacity == 0 ? INITIAL_CAPACITY
-						      : scan->capacity * 2;
-		char **paths = (char **)realloc(
-			(void *)scan->paths, capacity * sizeof(*scan->paths));
-		if (paths == NULL) {
+static bool push_item(
+	char ***items, size_t *count, size_t *capacity, char *item) {
+	if (*count == *capacity) {
+		size_t grown =
+			*capacity == 0 ? INITIAL_CAPACITY : *capacity * 2;
+		char **resized = (char **)realloc(
+			(void *)*items, grown * sizeof(**items));
+		if (resized == NULL) {
 			return false;
 		}
-		scan->paths = paths;
-		scan->capacity = capacity;
+		*items = resized;
+		*capacity = grown;
 	}
-	scan->paths[scan->count++] = path;
+	(*items)[(*count)++] = item;
 	return true;
 }
 
@@ -78,7 +95,86 @@ static int compare_paths(const void *a, const void *b) {
 	return strcmp(*lhs, *rhs);
 }
 
-bool matuwall_dirscan_run(struct matuwall_dirscan *scan, const char *dir) {
+// takes ownership of path; false only on allocation failure
+static bool push_owned(
+	char ***items, size_t *count, size_t *capacity, char *path) {
+	if (path != NULL && push_item(items, count, capacity, path)) {
+		return true;
+	}
+	free(path);
+	return false;
+}
+
+// reads one directory and closes it; false only on allocation failure
+static bool scan_dir(struct matuwall_dirscan *scan, struct walk *walk,
+	DIR *handle, const char *dir, bool descend) {
+	bool ok = true;
+	struct dirent *entry;
+	while (ok && (entry = readdir(handle)) != NULL) {
+		if (entry->d_name[0] == '.') {
+			continue;
+		}
+		if (walk->budgeted && ++walk->entries > MAX_ENTRIES) {
+			scan->truncated = true;
+			break;
+		}
+		// no stat: symlinked and DT_UNKNOWN directories are not entered
+		if (descend && entry->d_type == DT_DIR) {
+			if (walk->count == MAX_DIRS) {
+				walk->dirs_capped = true;
+				continue;
+			}
+			ok = push_owned(&walk->dirs, &walk->count,
+				&walk->capacity, join_path(dir, entry->d_name));
+			continue;
+		}
+		if (!may_be_image(entry->d_type) ||
+			!has_supported_extension(entry->d_name)) {
+			continue;
+		}
+		if (scan->count == MAX_ITEMS) {
+			scan->truncated = true;
+			break;
+		}
+		ok = push_owned(&scan->paths, &scan->count, &scan->capacity,
+			join_path(dir, entry->d_name));
+	}
+	closedir(handle);
+	return ok;
+}
+
+static bool walk_subdirs(struct matuwall_dirscan *scan, struct walk *walk) {
+	bool ok = true;
+	size_t level_end = walk->count;
+	size_t depth = 1;
+	while (ok && !scan->truncated && walk->head < walk->count) {
+		if (walk->head == level_end) {
+			depth++;
+			level_end = walk->count;
+		}
+		char *dir = walk->dirs[walk->head];
+		walk->dirs[walk->head++] = NULL;
+		DIR *handle = opendir(dir);
+		if (handle == NULL) {
+			walk->unreadable++;
+		} else {
+			ok = scan_dir(
+				scan, walk, handle, dir, depth < MAX_DEPTH);
+		}
+		free(dir);
+	}
+	return ok;
+}
+
+static void walk_finish(struct walk *walk) {
+	for (size_t i = walk->head; i < walk->count; i++) {
+		free(walk->dirs[i]);
+	}
+	free((void *)walk->dirs);
+}
+
+bool matuwall_dirscan_run(
+	struct matuwall_dirscan *scan, const char *dir, bool recursive) {
 	*scan = (struct matuwall_dirscan){0};
 
 	DIR *handle = opendir(dir);
@@ -89,37 +185,29 @@ bool matuwall_dirscan_run(struct matuwall_dirscan *scan, const char *dir) {
 		return true;
 	}
 
-	struct dirent *entry;
-	while ((entry = readdir(handle)) != NULL) {
-		if (entry->d_name[0] == '.') {
-			continue;
-		}
-		if (!may_be_image(entry->d_type)) {
-			continue;
-		}
-		if (!has_supported_extension(entry->d_name)) {
-			continue;
-		}
-		if (scan->count == MAX_ITEMS) {
-			scan->truncated = true;
-			break;
-		}
-
-		char *path = join_path(dir, entry->d_name);
-		if (path == NULL || !push_path(scan, path)) {
-			free(path);
-			closedir(handle);
-			matuwall_dirscan_finish(scan);
-			return false;
-		}
+	struct walk walk = {0};
+	bool ok = scan_dir(scan, &walk, handle, dir, recursive);
+	// top level reads as without recursion; subdirectories share a
+	// budget
+	walk.budgeted = true;
+	ok = ok && walk_subdirs(scan, &walk);
+	walk_finish(&walk);
+	scan->truncated = scan->truncated || walk.dirs_capped;
+	if (!ok) {
+		matuwall_dirscan_finish(scan);
+		return false;
 	}
 
-	closedir(handle);
-
+	if (walk.unreadable > 0) {
+		matuwall_log_warn("wallpapers",
+			"skipped %zu unreadable subdirector%s under %s",
+			walk.unreadable, walk.unreadable == 1 ? "y" : "ies",
+			dir);
+	}
 	if (scan->truncated) {
 		matuwall_log_warn("wallpapers",
-			"%s holds more than %d images; showing the first %d",
-			dir, MAX_ITEMS, MAX_ITEMS);
+			"%s: scan limit reached; showing %zu images", dir,
+			scan->count);
 	}
 
 	if (scan->count > 0) {

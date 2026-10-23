@@ -107,6 +107,7 @@ void matuwall_config_defaults(struct matuwall_config *cfg) {
 		.ring_width = 0,
 		.navigation_ms = 410,
 		.zoom_percent = 10,
+		.recursive = false,
 		.preview = false,
 		.close_on_focus_loss = false,
 		.mouse_enabled = false,

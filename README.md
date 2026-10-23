@@ -83,6 +83,7 @@ matuwall --config ~/.config/matuwall/work.toml   // use another config once
 matuwall --no-config -d ~/Pictures/Wallpapers    // defaults plus CLI overrides
 matuwall --print-config                          // show the effective config and exit
 matuwall -d ~/Pictures/Photography               // use another directory
+matuwall --recursive                             // include subdirectories
 matuwall -b awww                                 // use awww once
 matuwall -b plasma                               // KDE Plasma
 matuwall --backend auto                          // detect a running backend

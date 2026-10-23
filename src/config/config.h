@@ -29,6 +29,7 @@ struct matuwall_backend_args {
 
 struct matuwall_config {
 	char directory[PATH_MAX];
+	bool recursive;
 	char backend[32];
 	struct matuwall_backend_args sweetbg_args;
 	struct matuwall_backend_args awww_args;

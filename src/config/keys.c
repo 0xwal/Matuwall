@@ -13,6 +13,8 @@
 const struct matuwall_config_key matuwall_config_keys[] = {
 	{"general", "directory", MATUWALL_CONFIG_PATH, FIELD(directory), 0,
 		PATH_MAX, "directory", NULL, 'd'},
+	{"general", "recursive", MATUWALL_CONFIG_BOOL, FIELD(recursive), 0, 0,
+		"recursive", "no-recursive", 0},
 	{"general", "backend", MATUWALL_CONFIG_BACKEND, FIELD(backend), 0, 32,
 		"backend", NULL, 'b'},
 	{"backend.sweetbg", "args", MATUWALL_CONFIG_ARGS, FIELD(sweetbg_args),
