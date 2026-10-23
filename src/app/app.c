@@ -68,7 +68,8 @@ bool matuwall_app_init(struct matuwall_app *app,
 		matuwall_log_error("wallpapers",
 			"directory unavailable: path is "
 			"unresolved (is HOME set?)");
-	} else if (!matuwall_dirscan_run(&app->scan, app->config.directory)) {
+	} else if (!matuwall_dirscan_run(&app->scan, app->config.directory,
+			   app->config.recursive)) {
 		return false;
 	}
 	matuwall_grid_init(&app->grid, app->scan.count);

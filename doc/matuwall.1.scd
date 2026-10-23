@@ -107,6 +107,9 @@ Colors use _"#rrggbb"_, _"#rrggbbaa"_, or _none_; quote hex colors in the shell.
 *--no-hooks*
 	Clear the runtime hook list. A later *--hook* starts a new list.
 
+*--no-recursive*
+	Scan only the top of the wallpaper directory.
+
 *-o* _NAME_, *--output* _NAME_
 	Open on the named Wayland output. An unknown name is an error; available
 	outputs are reported.
@@ -122,6 +125,9 @@ Colors use _"#rrggbb"_, _"#rrggbbaa"_, or _none_; quote hex colors in the shell.
 
 *--radius* _RADIUS_
 	Set _grid.radius_ to an integer from 0 to 4096.
+
+*--recursive*
+	Also scan subdirectories. See _general.recursive_ in *matuwall*(5).
 
 *--ring* _COLOR_
 	Set _colors.ring_.

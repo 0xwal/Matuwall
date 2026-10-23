@@ -25,6 +25,11 @@ strings. _#_ starts a comment. Comments are not allowed inside arrays.
 	Wallpaper directory. _~_ expands to _$HOME_; relative paths use the current
 	directory. Defaults to _"~/Pictures/Wallpapers"_.
 
+*recursive*
+	Also scan subdirectories. Defaults to _false_. Hidden and symlinked
+	directories are skipped. The walk stops at 8 levels, 256 subdirectories,
+	or 8192 subdirectory entries, so a huge tree cannot slow startup.
+
 *backend*
 	Wallpaper backend: _"awww"_, _"sweetbg"_, _"plasma"_, _"command"_, or
 	_"auto"_. Defaults to _"awww"_.

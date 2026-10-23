@@ -13,7 +13,9 @@ struct matuwall_dirscan {
 	bool unavailable;
 };
 
-bool matuwall_dirscan_run(struct matuwall_dirscan *scan, const char *dir);
+// recursive walks subdirectories breadth-first, bounded in depth and entries
+bool matuwall_dirscan_run(
+	struct matuwall_dirscan *scan, const char *dir, bool recursive);
 
 void matuwall_dirscan_finish(struct matuwall_dirscan *scan);
 
