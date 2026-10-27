@@ -135,7 +135,10 @@ static void handle_key(void *data, struct wl_keyboard *keyboard,
 	}
 
 	if (seat->handler.key != NULL) {
-		seat->handler.key(seat->user_data, sym);
+		bool shifted = xkb_state_mod_name_is_active(
+			seat->state, XKB_MOD_NAME_SHIFT,
+			XKB_STATE_MODS_EFFECTIVE) > 0;
+		seat->handler.key(seat->user_data, sym, shifted);
 	}
 }
 
@@ -302,7 +305,7 @@ void matuwall_seat_dispatch_repeat(struct matuwall_seat *seat) {
 		seat->repeat_at_ms = now + interval;
 	}
 	if (seat->handler.key != NULL) {
-		seat->handler.key(seat->user_data, seat->repeat_sym);
+		seat->handler.key(seat->user_data, seat->repeat_sym, false);
 	}
 }
 

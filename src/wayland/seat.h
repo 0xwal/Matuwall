@@ -12,7 +12,7 @@ struct wl_keyboard;
 struct wl_surface;
 
 struct matuwall_seat_handler {
-	void (*key)(void *user_data, xkb_keysym_t sym);
+	void (*key)(void *user_data, xkb_keysym_t sym, bool shifted);
 	void (*focus_lost)(void *user_data);
 	// coordinates are logical pixels local to surface, which may be NULL
 	void (*pointer_motion)(void *user_data, struct wl_surface *surface,

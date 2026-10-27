@@ -50,6 +50,7 @@ bool matuwall_app_init(struct matuwall_app *app,
 	const struct matuwall_config *config, const char *output_name);
 
 bool matuwall_app_run(struct matuwall_app *app);
+bool matuwall_app_apply(struct matuwall_app *app);
 
 void matuwall_app_finish(struct matuwall_app *app);
 

@@ -28,7 +28,7 @@ static void apply_and_exit(struct matuwall_app *app) {
 
 // --- keyboard ---
 
-static void handle_key(void *user_data, xkb_keysym_t sym) {
+static void handle_key(void *user_data, xkb_keysym_t sym, bool shifted) {
 	struct matuwall_app *app = user_data;
 	enum matuwall_move move;
 
@@ -39,6 +39,10 @@ static void handle_key(void *user_data, xkb_keysym_t sym) {
 		return;
 	case XKB_KEY_Return:
 	case XKB_KEY_KP_Enter:
+		if (app->config.apply_without_exit && !shifted) {
+			matuwall_app_apply(app);
+			return;
+		}
 		// Defer the apply off the input path; run() does it on the way
 		// out
 		apply_and_exit(app);

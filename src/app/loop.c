@@ -381,6 +381,10 @@ static bool apply_selection(struct matuwall_app *app) {
 	return true;
 }
 
+bool matuwall_app_apply(struct matuwall_app *app) {
+	return apply_selection(app);
+}
+
 bool matuwall_app_run(struct matuwall_app *app) {
 	// The configured surface size is only known now, and every later
 	// configure refreshes this again from pump_events

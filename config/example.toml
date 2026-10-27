@@ -44,6 +44,9 @@ preview = false
 # Close when keyboard focus moves away from Matuwall
 close_on_focus_loss = false
 
+# Enter applies the wallpaper without exiting; Shift+Enter applies and exits
+apply_without_exit = false
+
 # Placement on screen: "center", "left", "right", "top" or "bottom"
 position = "bottom"
 

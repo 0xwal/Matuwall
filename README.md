@@ -118,6 +118,7 @@ matuwall -o DP-1                                 // open explicitly on DP-1
 matuwall -p left                                 // move the panel
 matuwall --preview                               // enable the full-screen backdrop
 matuwall --close-on-focus-loss                   // close when focus moves away
+matuwall --apply-without-exit                    // Enter applies without exiting
 matuwall --no-hooks                              // apply without running hooks
 matuwall --hook 'matugen image {path}'           // replace hooks for one run
 ```
