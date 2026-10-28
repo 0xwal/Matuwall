@@ -8,6 +8,7 @@
 #include <wayland-client.h>
 
 #include "app/app.h"
+#include <stdlib.h>
 #include "app/preview.h"
 #include "app/thumbs.h"
 #include "backend/backend.h"
@@ -377,6 +378,13 @@ static bool apply_selection(struct matuwall_app *app) {
 	}
 	matuwall_log_info(
 		"apply", "applied %s with %s", resolved, backend->name);
+	// notify the user which wallpaper was applied
+	char notify[PATH_MAX + 64];
+	const char *base = strrchr(resolved, '/');
+	base = base ? base + 1 : resolved;
+	snprintf(notify, sizeof(notify),
+		"notify-send \"Matuwall\" \"%s\" >/dev/null 2>&1", base);
+	system(notify);
 	matuwall_hooks_run(&app->config, resolved);
 	return true;
 }
